@@ -1,0 +1,20 @@
+links used:
+http://manpages.ubuntu.com/manpages/artful/en/man5/deb-version.5.html
+https://help.ubuntu.com/community/Repositories/Ubuntu
+
+version string:  1.3-4ubuntu5.2~ppa2
+
+1. What is the upstream version?
+1.3. The upstream version is the one before the hyphen
+4 is the debian version of the package
+ubuntu5.2 is the 5.2 ubuntu version of the debian package
+
+2. What is the meaning of the "~" (tilde) character, and why was it used there?
+The "~" character is defined to sort before anything else. It is used to insert a version before a standard one.
+In this case is used to compare the ubuntu official package against a personal package archive having version 2. PPAs are create and distributed by developers through ubuntu repositories that are low-security alternatives to official packages.
+
+3. Is this a sync from a Debian package or does it have Ubuntu modifications? Why?
+The package has Ubuntu modification that contains patches/fixes on the original debian package code 
+
+4. If you were going to prepare a change to that package and upload it to the same place where it is, what would the new version string be and why?
+The new version string would be 1.3-4ubuntu5.2~ppa3 and the reason is the one explained above: this is a PPA package and the version is against the official package version. This version is the final number of the string. 

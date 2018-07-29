@@ -1,0 +1,86 @@
+# Prerequisites
+sudo apt-get install dh-make bzr-builddeb automake
+
+# Create source package with automake files
+autoscan
+mv configure.scan configure.ac
+vim configure.ac 
+	#                                               -*- Autoconf -*-
+	# Process this file with autoconf to produce a configure script.
+
+	AC_PREREQ(2.69)
+	AC_INIT(hello, 1.5)
+	AC_CONFIG_SRCDIR(src/main.c)
+
+	# Checks for programs.
+	AC_PROG_CC
+
+	# Checks for libraries.
+
+	# Checks for header files.
+
+	# Checks for typedefs, structures, and compiler characteristics.
+
+	# Checks for library functions.
+
+autoconf
+vim Makefile.am
+	AUTOMAKE_OPTIONS = foreign
+	SUBDIRS = src
+vim src/main.c
+vim src/Makefile.am
+	AM_CFLAGS = -pedantic -Wall -std=c99 -O2
+	AM_LDFLAGS =
+
+	bin_PROGRAMS = hello
+
+	hello_SOURCES = main.c
+
+	CLEANFILES = $(bin_PROGRAMS) *.o
+vim man/hello.1
+vim man/Makefile.am
+	man_MANS = hello.1
+	BUILT_SOURCES = hello.1.html
+
+	$(BUILT_SOURCES):hello.1
+		man2html hello.1 > hello.1.html
+
+	CLEANFILES: *.o $(BUILT_SOURCES)
+
+vim configure.ac
+	#                                               -*- Autoconf -*-
+	# Process this file with autoconf to produce a configure script.
+
+	AC_PREREQ(2.69)
+	AC_INIT(hello, 1.0, acastelfranco@gmail.com)
+	AC_CONFIG_SRCDIR(src/main.c)
+	# Added AM_INIT_AUTOMAKE
+	AM_INIT_AUTOMAKE
+
+	# Checks for programs.
+	AC_PROG_CC
+
+	# Checks for libraries.
+
+	# Checks for header files.
+
+	# Checks for typedefs, structures, and compiler characteristics.
+
+	# Checks for library functions.
+
+	# Added Makefiles in AC_OUTPUT variable
+	AC_OUTPUT(Makefile src/Makefile man/Makefile)
+
+autoreconf -vif
+./configure 
+make
+
+cd ..
+tar cvzf hello-1.0.tgz hello-1.0
+
+# Prepare debian package
+bzr dh-make hello 1.0 hello-1.0.tar.gz
+rm -f hello*.tar.gz hello-1.0
+tar cvzf hello-1.0.tgz hello
+
+# NOTE: debian dir has to contain files modified as per Debian Policy Manual 4.1.5.0
