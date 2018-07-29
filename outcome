@@ -1,0 +1,266 @@
+== Exercise 1: coding ==
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+enum
+{
+        SYNERR = 1,
+        STRERR,
+        CHKERR,
+        ERRLEN
+};
+
+int chunkify(char *string, int chunk_length, char fill)
+{
+        int i, len, rlen;
+
+        if (!string)
+        {
+                printf("input string is null\n");
+                return STRERR;
+        }
+
+        if (chunk_length == 0)
+        {
+                printf("chunk length is zero\n");
+                return CHKERR;
+        }
+
+        len = strlen(string);
+        rlen = len - (len % chunk_length);
+
+        printf("[");
+
+        for (i = 0; i < rlen; i += chunk_length)
+        {
+                int next = i + chunk_length;
+                char tmp = string[next];
+
+                string[next] = '\0';
+                printf("\'%s\'", &string[i]);
+                string[next] = tmp;
+
+                if (next < rlen)
+                        printf(", ");
+        }
+
+        if (len > rlen)
+        {
+                int fills = chunk_length - (len % chunk_length);
+
+                string += rlen;
+                printf(", \'%s", string);
+
+                for (i = 0; i < fills; i++)
+                        printf("%c", fill);
+
+                printf("'");
+        }
+
+        printf("]\n");
+}
+
+int main(int argc, char **argv)
+{
+        char fill = 'x';
+
+        if (argc < 3 || argc > 4)
+        {
+                printf("usage: %s <string> <chunklen> <filler>\n", argv[0]);
+                return SYNERR;
+        }
+
+        if (argc == 4)
+                fill = argv[3][0];
+
+        return chunkify(argv[1], atoi(argv[2]), fill);
+}
+
+== Exercise 2: analyze failures ==
+# OS: Ubuntu 18.04 LTS
+
+## Prerequisites
+# download debug-crash.qcow.xz
+# download debug-crash.xml
+# this script will install the bare minimum stuff to debug the problem
+
+[ ! -f debug-crash.qcow.xz -o ! -f debug-crash.xml ] && echo "please download the files: debug-crash.qcow.xz debug-crash.xml" && exit 1
+
+case $1 in
+        install)
+                sudo apt-get -y install libvirt-clients libvirt-daemon-system
+                mkdir -p images
+                cp debug-crash.qcow.xz debug-crash.xml images
+                cd images
+                unxz debug-crash.qcow.xz
+                sed -i "s/\/var\/lib\/uvtool\/libvirt\/images/${PWD//\//\\/}/g" debug-crash.xml
+                ;;
+        start)
+                [ -d images ] && cd images && virsh create debug-crash.xml
+                ;;
+        console)
+                [ -d images ] && cd images && echo "'Ctrl' + 'Alt Gr' + ']' (it keyboard) to exit" && virsh console debug-crash
+                ;;
+        stop)
+                [ -d images ] && cd images && virsh shutdown debug-crash
+                ;;
+        uninstall)
+                if [ -d images ]; then
+                        cd images
+                        virsh shutdown debug-crash
+                        cd -
+                        rm -rf images
+                fi
+
+                sudo apt-get -y remove libvirt-clients libvirt-daemon-system
+                sudo apt-get -y autoremove
+                sudo apt-get -y autoclean
+                ;;
+        apache2)
+cat << EOF
+1) journalctl > out.txt
+2) vim out.txt and search for apache2 to find the errors
+3) add the ServerName "192.168.122.15" line by modifying /etc/apache2/apache2.conf to fix the following error:
+   debug-crash apachectl[2165]: AH00558: apache2: Could not reliably determine the server's fully qualified
+   domain name, using 127.0.1.1. Set the 'ServerName' directive globally to suppress this message
+4) commented out the line include the extra.conf file that is a link to /dev/urandom to fix the error:
+   debug-crash apachectl[2439]: [Wed Jun 20 06:37:38.566851 2018] [[core:error] [pid 2441:tid 140266548263872]
+   AH00554: Access to file /etc/apache2/extra.conf denied by server: not a regular file
+5) sudo systemctl start apache2
+6) sudo systemctl status apache2 to verify if there is any further error
+7) open a browser on the url http://192.168.122.15 to verify that everything is working fine
+EOF
+                ;;
+        crash)
+echo << EOF
+1) The segfault, argument of the crash file, it is obtained by using the postconf command with no root permissions 
+EOF
+                ;;
+        *)
+                ;;
+esac
+
+== Exercise 3: Makefile weirdness ==
+It is enough to add the keywork 'shell' to execute the command for the LDFLAGS correctly 
+
+override_dh_auto_build:
+        CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
+        LDFLAGS="$(shell dpkg-buildflags --get LDFLAGS \
+        | sed -e 's/-Wl,-Bsymbolic-functions//') \
+        dh_auto_build
+
+
+== Exercise 4: Packaging and versioning  ==
+Looking at the package I would create at least a src dir and a man dir to put source code and documentation in those directories and I'll use automake building system in place of this ancient spac building system and the Ubuntu official packaging strategy as I describe in the following notes:
+
+# Prerequisites
+sudo apt-get install dh-make bzr-builddeb automake
+
+# Create source package with automake files
+autoscan
+mv configure.scan configure.ac
+vim configure.ac 
+	#                                               -*- Autoconf -*-
+	# Process this file with autoconf to produce a configure script.
+
+	AC_PREREQ(2.69)
+	AC_INIT(hello, 1.5)
+	AC_CONFIG_SRCDIR(src/main.c)
+
+	# Checks for programs.
+	AC_PROG_CC
+
+	# Checks for libraries.
+
+	# Checks for header files.
+
+	# Checks for typedefs, structures, and compiler characteristics.
+
+	# Checks for library functions.
+
+autoconf
+vim Makefile.am
+	AUTOMAKE_OPTIONS = foreign
+	SUBDIRS = src
+vim src/main.c
+vim src/Makefile.am
+	AM_CFLAGS = -pedantic -Wall -std=c99 -O2
+	AM_LDFLAGS =
+
+	bin_PROGRAMS = hello
+
+	hello_SOURCES = main.c
+
+	CLEANFILES = $(bin_PROGRAMS) *.o
+vim man/hello.1
+vim man/Makefile.am
+	man_MANS = hello.1
+	BUILT_SOURCES = hello.1.html
+
+	$(BUILT_SOURCES):hello.1
+		man2html hello.1 > hello.1.html
+
+	CLEANFILES: *.o $(BUILT_SOURCES)
+
+vim configure.ac
+	#                                               -*- Autoconf -*-
+	# Process this file with autoconf to produce a configure script.
+
+	AC_PREREQ(2.69)
+	AC_INIT(hello, 1.0, acastelfranco@gmail.com)
+	AC_CONFIG_SRCDIR(src/main.c)
+	# Added AM_INIT_AUTOMAKE
+	AM_INIT_AUTOMAKE
+
+	# Checks for programs.
+	AC_PROG_CC
+
+	# Checks for libraries.
+
+	# Checks for header files.
+
+	# Checks for typedefs, structures, and compiler characteristics.
+
+	# Checks for library functions.
+
+	# Added Makefiles in AC_OUTPUT variable
+	AC_OUTPUT(Makefile src/Makefile man/Makefile)
+
+autoreconf -vif
+./configure 
+make
+
+cd ..
+tar cvzf hello-1.0.tgz hello-1.0
+
+# Prepare debian package
+bzr dh-make hello 1.0 hello-1.0.tar.gz
+rm -f hello*.tar.gz hello-1.0
+tar cvzf hello-1.0.tgz hello
+
+# NOTE: debian dir has to contain files modified as per Debian Policy Manual 4.1.5.0
+
+# Ubuntu Package Version String
+
+links used:
+http://manpages.ubuntu.com/manpages/artful/en/man5/deb-version.5.html
+https://help.ubuntu.com/community/Repositories/Ubuntu
+
+version string:  1.3-4ubuntu5.2~ppa2
+
+1. What is the upstream version?
+1.3. The upstream version is the one before the hyphen
+4 is the debian version of the package
+ubuntu5.2 is the 5.2 ubuntu version of the debian package
+
+2. What is the meaning of the "~" (tilde) character, and why was it used there?
+The "~" character is defined to sort before anything else. It is used to insert a version before a standard one.
+In this case is used to compare the ubuntu official package against a personal package archive having version 2. PPAs are create and distributed by developers through ubuntu repositories that are low-security alternatives to official packages.
+
+3. Is this a sync from a Debian package or does it have Ubuntu modifications? Why?
+The package has Ubuntu modification that contains patches/fixes on the original debian package code
+
+4. If you were going to prepare a change to that package and upload it to the same place where it is, what would the new version string be and why?
+The new version string would be 1.3-4ubuntu5.2~ppa3 and the reason is the one explained above: this is a PPA package and the version is against the official package version. This version is the final number of the string.
