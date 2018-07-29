@@ -1,0 +1,67 @@
+<domain type='kvm'>
+  <name>debug-crash</name>
+  <uuid>49cdd138-2fae-4f57-8fdc-d9bafabb92ac</uuid>
+  <metadata>
+    <uvt:ssh_known_hosts xmlns:uvt="https://launchpad.net/uvtool/libvirt/1">ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDi93y92W7QDktmWcMQJ3J1pjBVUrOB8yGba3HD+u48f8EKVZ1QF5z3q3cA4L1ph26w1Fp6d6/1S9e/+fPgbs/0f3YfATT9MB01UAeX4guTOoq60cvuCFcGOt5b6paJ7pdiLbcEFNth/cxvuoZtV1GonwmbzWWbVImmnRjxgqtNb8Z5FOndCR3hgdbjBewtyGSJYt/6TBIcn25UP94i4xUpMF1wG6dgAuVadTQoPTCMfLn5pEfMZpkcsE48Pm+cuqQpaRa38GaceI+jd7PvrfWZHCM34CjHc1OApaDmXozlktxmwC/pbWnFE7zHXYLEW7KhKJp72xHMGehSaj/oIzw3 root@localhost
+ssh-dss AAAAB3NzaC1kc3MAAACBAOXSe9T9SFl0VdryZIzjZCg1bTzqPX+LAgnlsC3xzR5keGz1djVUGsWxRUrDFR47nnhyCZA3A1O9uQRAwn56Ei+8HCZr2uNw2oYqHjlH4Lx3TuXBlqZsVi4KmEdUJbRcuFtQsYuCY/tAkoHRFb+7biaUFQUWSCqG18+kP8EyOXtVAAAAFQCpOjIvcsOWB45KjZtxlYCaA9r+xQAAAIEAuluzvI6phgNCoMNOwPXi/MVARW+qvjDgDPMDA/0I6eqSxa/l5gvc5Yzvtz0dZmmR34LqStrIQMobOh+AxCXPdmeSkzB2aKg75QNqwnE6bKMUiiTSu3q8+IdMyeIf6EQItAI1mPfdaSrl6YViHxqJPdTFw3vuh01FM8gL1O5HAqgAAACBAJvXcTFxmfH558Ktjc8vt6jEwAxvvfBmgo4DCp7rbqR7ZL0fU85DFtbPkugsfn23iex0KTv6Tcxas+PArp0ZzjrtB25oLJrU+QJuZ5ojwLs/clnTU8l9pqHGQzjSMHYKbWA5nQQAEcNwCqtyvIWitV3xPrtF5tJAbKJiVFbVGwrY root@localhost
+ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBFHfpNZG4ldq5FB9FJ9ljR3tgCnfHK3pzh8sG2uQ+5vhXTkB/Ri1W0Y2YV9UhiwXxoMqcf4Np6XMJbeGSYFOHgE= root@localhost
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAJZ864I7erOkCePauMRHajbxZxO8adxBAKm3S1AU7mS root@localhost
+</uvt:ssh_known_hosts>
+  </metadata>
+  <memory unit='KiB'>524288</memory>
+  <currentMemory unit='KiB'>524288</currentMemory>
+  <vcpu placement='static'>1</vcpu>
+  <os>
+    <type arch='x86_64' machine='pc-i440fx-bionic'>hvm</type>
+    <boot dev='hd'/>
+  </os>
+  <features>
+    <acpi/>
+    <apic/>
+    <pae/>
+  </features>
+  <clock offset='utc'/>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>destroy</on_crash>
+  <devices>
+    <emulator>/usr/bin/kvm-spice</emulator>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='/var/lib/uvtool/libvirt/images/debug-crash.qcow'/>
+      <target dev='vda' bus='virtio'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0'/>
+    </disk>
+    <controller type='usb' index='0' model='piix3-uhci'>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x2'/>
+    </controller>
+    <controller type='pci' index='0' model='pci-root'/>
+    <interface type='network'>
+      <mac address='52:54:00:c9:bd:ff'/>
+      <source network='default'/>
+      <model type='virtio'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
+    </interface>
+    <serial type='pty'>
+      <target type='isa-serial' port='0'>
+        <model name='isa-serial'/>
+      </target>
+    </serial>
+    <console type='pty'>
+      <target type='serial' port='0'/>
+    </console>
+    <input type='mouse' bus='ps2'/>
+    <input type='keyboard' bus='ps2'/>
+    <graphics type='vnc' port='-1' autoport='yes' listen='127.0.0.1'>
+      <listen type='address' address='127.0.0.1'/>
+    </graphics>
+    <video>
+      <model type='cirrus' vram='16384' heads='1' primary='yes'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x02' function='0x0'/>
+    </video>
+    <memballoon model='virtio'>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
+    </memballoon>
+  </devices>
+</domain>
+
